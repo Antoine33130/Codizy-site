@@ -151,11 +151,14 @@ img{display:block;max-width:100%}
 .slider-help{font-size:12px;color:var(--mt);margin:0 0 8px 28px;line-height:1.4}
 .slider-wrap{position:relative;height:36px;display:flex;align-items:center}
 .slider-track{position:absolute;left:0;right:0;height:6px;border-radius:3px;background:var(--bdr)}
-.slider-fill{position:absolute;left:0;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--blue) 0%,var(--bd) 50%,var(--acc) 100%);background-size:100vw 6px;background-position:left;transition:width .12s ease}
-input[type=range]{position:relative;width:100%;height:36px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;z-index:2}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--w);border:3px solid var(--blue);box-shadow:0 2px 10px rgba(57,114,240,.3);transition:transform .15s,box-shadow .15s}
+.slider-fill{display:none}
+input[type=range]{position:relative;width:100%;height:6px;-webkit-appearance:none;appearance:none;background:var(--bdr);border-radius:3px;cursor:pointer;z-index:2;outline:none;margin:15px 0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--bdr)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--w);border:3px solid var(--blue);box-shadow:0 2px 10px rgba(57,114,240,.3);margin-top:-9px;transition:transform .15s,box-shadow .15s;position:relative;z-index:3}
 input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);box-shadow:0 3px 14px rgba(57,114,240,.5)}
 input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--w);border:3px solid var(--blue);box-shadow:0 2px 10px rgba(57,114,240,.3)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--blue)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--bdr)}
 .slider-range{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--mt);margin-top:2px}
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
 .kpi{border-radius:18px;padding:22px 20px;transition:transform .2s}.kpi:hover{transform:translateY(-2px)}
@@ -437,6 +440,10 @@ input[type="checkbox"]:checked+.chip{background:var(--blue);color:#fff;border-co
 .legal-content h3{font-size:16px;font-weight:700;margin:24px 0 8px;color:var(--blue)}
 .legal-content p,.legal-content li{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:8px}
 .legal-content ul{padding-left:20px;margin-bottom:12px}
+
+
+.comp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.comp-stats>div{background:var(--bg);border-radius:16px;padding:24px;text-align:center;border:2px solid var(--bdr)}
 
 </style>
 </head>
@@ -736,7 +743,7 @@ input[type="checkbox"]:checked+.chip{background:var(--blue);color:#fff;border-co
       </div>
     </div>
 
-<div class="comp-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px">
+<div class="comp-stats">
       <div style="background:var(--bg);border-radius:16px;padding:24px;text-align:center;border:2px solid var(--bdr)">
         <div style="font-family:'DM Mono',monospace;font-size:32px;font-weight:700;color:var(--blue)">3-6 sem.</div>
         <div style="font-size:13px;color:var(--t2);margin-top:6px">Délai Codizy</div>
@@ -944,6 +951,12 @@ const PARAMS=[
   {id:"investissement",label:"Investissement projet",unit:"€",min:1000,max:80000,step:500,def:10000,ico:"🏗",help:"Budget total du projet (conception + déploiement)"},
 ];
 const vals={};PARAMS.forEach(p=>vals[p.id]=p.def);
+
+function styleRange(id,pct){
+  var el=document.querySelector('#slider-'+id+' input[type=range]');
+  if(!el)return;
+  el.style.background='linear-gradient(to right,#3972F0 0%,#3972F0 '+pct+'%,#D9E1F2 '+pct+'%,#D9E1F2 100%)';
+}
 function fE(n){return Math.round(n).toLocaleString('fr-FR')+' €'}
 function fK(n){if(n>=1e6)return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';return Math.round(n).toLocaleString('fr-FR')}
 
@@ -959,8 +972,13 @@ function buildSliders(){
 function oS(id,v){
   v=parseFloat(v);vals[id]=v;
   const p=PARAMS.find(x=>x.id===id);
-  document.getElementById('f-'+id).style.width=((v-p.min)/(p.max-p.min))*100+' %';
+  var pct=((v-p.min)/(p.max-p.min))*100;
+  document.getElementById('f-'+id).style.width=pct+'%';
   document.getElementById('v-'+id).textContent=p.unit==='€'?fE(v):p.unit==='%'?v+' %':v+' '+p.unit;
+  var inp=document.getElementById('f-'+id);
+  if(inp&&inp.nextElementSibling){
+    inp.nextElementSibling.style.background='linear-gradient(to right,#3972F0 0%,#3972F0 '+pct+'%,#D9E1F2 '+pct+'%,#D9E1F2 100%)';
+  }
   render();
 }
 
@@ -986,8 +1004,8 @@ function render(){
 
   let h='';
   h+='<div class="kpi-row">';
-  h+='<div class="kpi accent"><div class="kpi-label">ROI à 1 an</div><div class="kpi-value">'+(r1>=0?'+':'')+Math.round(r1)+'%</div><div class="kpi-sub">'+(r1>=100?'Excellent':r1>=0?'Positif':'Non rentable à 1 an')+'</div></div>';
-  h+='<div class="kpi normal"><div class="kpi-label">ROI à 3 ans</div><div class="kpi-value mono">'+(r3>=0?'+':'')+Math.round(r3)+'%</div><div class="kpi-sub">'+fE(s3-v.investissement)+' de gain net</div></div>';
+  h+='<div class="kpi accent"><div class="kpi-label">ROI à 1 an</div><div class="kpi-value">'+(r1>=0?'+':'')+Math.round(r1)+' %</div><div class="kpi-sub">'+(r1>=100?'Excellent':r1>=0?'Positif':'Non rentable à 1 an')+'</div></div>';
+  h+='<div class="kpi normal"><div class="kpi-label">ROI à 3 ans</div><div class="kpi-value mono">'+(r3>=0?'+':'')+Math.round(r3)+' %</div><div class="kpi-sub">'+fE(s3-v.investissement)+' de gain net</div></div>';
   h+='<div class="kpi normal"><div class="kpi-label">Heures récupérées / an</div><div class="kpi-value mono">'+fK(sH)+'h</div><div class="kpi-sub">soit '+Math.round(sH/7.5)+' jours de travail</div></div>';
   h+='</div>';
 
@@ -1000,11 +1018,11 @@ function render(){
   h+='<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--bg);display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;font-weight:600">Gain net année 1</span><span class="mono" style="font-size:24px;font-weight:700;color:'+nC+'">'+(nY>=0?'+':'')+fE(nY)+'</span></div>';
   h+='</div>';
 
-  h+='<div class="synthesis"><div class="synthesis-label">Synthèse décideur</div><p>Avec <strong>'+v.employees+' collaborateur'+(v.employees>1?'s':'')+'</strong> passant chacun <strong>'+v.hoursPerWeek+'h/sem</strong> sur des tâches manuelles, le coût annuel est de <strong>'+fE(tC)+'</strong>. En automatisant <strong>'+v.automationGain+'%</strong>, l\'économie atteint <strong>'+fE(sC)+'/an</strong>. Investissement : '+fE(v.investissement)+' — rentabilisé en <strong>'+pT+'</strong>.</p></div>';
+  h+='<div class="synthesis"><div class="synthesis-label">Synthèse décideur</div><p>Avec <strong>'+v.employees+' collaborateur'+(v.employees>1?'s':'')+'</strong> passant chacun <strong>'+v.hoursPerWeek+'h/sem</strong> sur des tâches manuelles, le coût annuel est de <strong>'+fE(tC)+'</strong>. En automatisant <strong>'+v.automationGain+' %</strong>, l\'économie atteint <strong>'+fE(sC)+'/an</strong>. Investissement : '+fE(v.investissement)+' — rentabilisé en <strong>'+pT+'</strong>.</p></div>';
 
   h+='<div style="background:var(--w);border-radius:18px;border:1px solid var(--bdr);padding:24px;margin-bottom:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap" id="sim-capture">';
-  h+='<div style="flex:1;min-width:200px"><div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">Recevez cette synthese par email</div><div style="font-size:13px;color:var(--mt)">Pour la partager a votre direction ou DAF</div></div>';
-  h+='<div style="display:flex;gap:8px;flex:1;min-width:280px"><input type="email" id="sim-email" placeholder="votre@email.fr" style="flex:1;padding:12px 16px;border:1px solid var(--bdr);border-radius:10px;font-family:inherit;font-size:14px"><button onclick="sendSynthesis()" class="btn btn-primary btn-sm" style="white-space:nowrap">Envoyer</button></div>';
+  h+='<div style="flex:1;min-width:200px"><div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">Recevez vos résultats personnalisés</div><div style="font-size:13px;color:var(--mt)">On vous recontacte sous 24h avec une analyse sur mesure</div></div>';
+  h+='<div style="display:flex;gap:8px;flex:1;min-width:280px"><input type="email" id="sim-email" placeholder="votre@email.fr" style="flex:1;padding:12px 16px;border:1px solid var(--bdr);border-radius:10px;font-family:inherit;font-size:14px"><button onclick="sendSynthesis()" class="btn btn-primary btn-sm" style="white-space:nowrap">Recevoir mes résultats</button></div>';
   h+='</div>';
   h+='<div style="display:flex;gap:12px;justify-content:center;padding:10px 0 0;flex-wrap:wrap">';
   h+='<a href="https://cal.com/antoine-guerin-fsxkbx" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none">Discuter de mon projet avec Antoine →</a>';
@@ -1016,6 +1034,16 @@ function render(){
 
 buildSliders();
 render();
+// Style all range inputs on init
+PARAMS.forEach(function(p){
+  var pct=((p.def-p.min)/(p.max-p.min))*100;
+  var inputs=document.querySelectorAll('input[type=range]');
+  inputs.forEach(function(el){
+    if(el.min==p.min && el.max==p.max && el.value==p.def){
+      el.style.background='linear-gradient(to right,#3972F0 0%,#3972F0 '+pct+'%,#D9E1F2 '+pct+'%,#D9E1F2 100%)';
+    }
+  });
+});
 
 
 var CAL_URL="https://cal.com/antoine-guerin-fsxkbx";
@@ -1055,31 +1083,40 @@ function fallbackMailto(data){
 
 function sendSynthesis(){
   var email=document.getElementById('sim-email').value;
-  // Tracking : notif a Antoine quand quelqu'un envoie sa synthese
-  try{
-    fetch('https://formspree.io/f/https://formspree.io/f/xqewzrdo',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({
-        _subject:'[Codizy] Synthese ROI envoyee',
-        type:'Email Synthesis',
-        recipient:email,
-        employees:vals.employees,
-        investissement:vals.investissement,
-        timestamp:new Date().toLocaleString('fr-FR'),
-        source:'Simulateur ROI - Envoi email'
-      })
-    }).catch(function(){});
-  }catch(e){}
-  if(!email||!email.includes('@')){alert('Merci de renseigner un email valide');return}
+  if(!email||email.indexOf('@')<0){alert('Merci de renseigner un email valide');return}
   var v=vals,w=47,mH=v.employees*v.hoursPerWeek*w,mC=mH*v.hourlyCost,eC=mC*(v.errorRate/100),tC=mC+eC;
   var sC=tC*(v.automationGain/100),pb=sC>0?(v.investissement/sC)*12:999;
   var pT=pb<1?'< 1 mois':pb>36?'> 36 mois':Math.round(pb)+' mois';
-  var subject='Votre simulation ROI Codizy';
-  var body='Simulation ROI Codizy\n========================\n\nCollaborateurs: '+v.employees+'\nHeures manuelles/sem/pers: '+v.hoursPerWeek+'h\nCout horaire: '+v.hourlyCost+' EUR/h\nTaux erreurs: '+v.errorRate+'%\nGain automatisation: '+v.automationGain+'%\nInvestissement: '+fE(v.investissement)+'\n\nRESULTATS\n---------\nCout annuel process manuels: '+fE(tC)+'\nEconomies annuelles: '+fE(sC)+'\nROI a 1 an: '+Math.round(((sC-v.investissement)/v.investissement)*100)+'%\nPayback: '+pT+'\n\n---\nSimulation realisee sur codizy.fr\nContact: codizy@outlook.fr | 06 85 17 48 89';
-  window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body));
-  var el=document.getElementById('sim-capture');
-  el.innerHTML='<div style="text-align:center;width:100%;padding:8px 0"><span style="color:var(--grn);font-weight:700">Synthese envoyee a '+email+'</span></div>';
+  var r1=Math.round(((sC-v.investissement)/v.investissement)*100);
+  fetch('https://formspree.io/f/https://formspree.io/f/xqewzrdo',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({
+      _subject:'[Codizy] Nouveau lead simulateur ROI',
+      type:'Simulation ROI',
+      email_prospect:email,
+      collaborateurs:v.employees,
+      heures_semaine:v.hoursPerWeek,
+      cout_horaire:v.hourlyCost+'EUR',
+      taux_erreurs:v.errorRate+' %',
+      gain_automatisation:v.automationGain+' %',
+      investissement:v.investissement+'EUR',
+      cout_annuel:Math.round(tC)+'EUR',
+      economies:Math.round(sC)+'EUR',
+      roi_1an:r1+' %',
+      payback:pT,
+      source:'Simulateur ROI - Envoi synthese'
+    })
+  }).then(function(r){
+    var el=document.getElementById('sim-capture');
+    if(r.ok){
+      el.innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700;font-size:15px">Synthese envoyee a '+email+'</span><div style="font-size:12px;color:var(--mt);margin-top:6px">Nous vous recontactons sous 24h avec une analyse personnalisee</div></div>';
+    }else{
+      el.innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700">Demande enregistree — nous revenons vers vous rapidement</span></div>';
+    }
+  }).catch(function(){
+    document.getElementById('sim-capture').innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700">Demande enregistree</span></div>';
+  });
 }
 
 function exportPDF(){
@@ -1139,8 +1176,8 @@ function exportPDF(){
   doc+='<tr><td>Collaborateurs concernés</td><td>'+v.employees+'</td></tr>';
   doc+='<tr><td>Heures manuelles / sem / personne</td><td>'+v.hoursPerWeek+'h</td></tr>';
   doc+='<tr><td>Coût horaire chargé</td><td>'+fE(v.hourlyCost)+'</td></tr>';
-  doc+='<tr><td>Taux erreurs / reprises</td><td>'+v.errorRate+'%</td></tr>';
-  doc+='<tr><td>Gain automatisation estimé</td><td>'+v.automationGain+'%</td></tr>';
+  doc+='<tr><td>Taux erreurs / reprises</td><td>'+v.errorRate+' %</td></tr>';
+  doc+='<tr><td>Gain automatisation estimé</td><td>'+v.automationGain+' %</td></tr>';
   doc+='<tr><td>Investissement projet</td><td>'+fE(v.investissement)+'</td></tr>';
   doc+='</table>';
   
@@ -1150,7 +1187,7 @@ function exportPDF(){
   doc+='<tr class="hl"><td>Économies annuelles</td><td class="gn">'+fE(sC)+'</td></tr>';
   doc+='<tr><td>Gain net année 1</td><td>'+(nY>=0?'+':'')+fE(nY)+'</td></tr>';
   doc+='<tr><td>Gain net sur 3 ans</td><td>'+(s3-v.investissement>=0?'+':'')+fE(s3-v.investissement)+'</td></tr>';
-  doc+='<tr class="hl"><td>ROI à 1 an</td><td class="ac">'+(r1>=0?'+':'')+r1+'%</td></tr>';
+  doc+='<tr class="hl"><td>ROI à 1 an</td><td class="ac">'+(r1>=0?'+':'')+r1+' %</td></tr>';
   doc+='<tr class="hl"><td>Délai de rentabilité</td><td class="ac">'+pT+'</td></tr>';
   doc+='</table>';
   
