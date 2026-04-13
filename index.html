@@ -151,7 +151,7 @@ img{display:block;max-width:100%}
 .slider-help{font-size:12px;color:var(--mt);margin:0 0 8px 28px;line-height:1.4}
 .slider-wrap{position:relative;height:36px;display:flex;align-items:center}
 .slider-track{position:absolute;left:0;right:0;height:6px;border-radius:3px;background:var(--bdr)}
-.slider-fill{position:absolute;left:0;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--acc));transition:width .12s ease}
+.slider-fill{position:absolute;left:0;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--blue) 0%,var(--bd) 50%,var(--acc) 100%);background-size:100vw 6px;background-position:left;transition:width .12s ease}
 input[type=range]{position:relative;width:100%;height:36px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;z-index:2}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--w);border:3px solid var(--blue);box-shadow:0 2px 10px rgba(57,114,240,.3);transition:transform .15s,box-shadow .15s}
 input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);box-shadow:0 3px 14px rgba(57,114,240,.5)}
@@ -858,7 +858,7 @@ input[type="checkbox"]:checked+.chip{background:var(--blue);color:#fff;border-co
       </div>
 
       <!-- FORM -->
-      <form id="codizy-form" style="background:var(--bg);border:1px solid var(--bdr);border-top:none;border-radius:0 0 20px 20px;padding:32px 28px" onsubmit="return submitForm(event)" data-formspree="xpwdzdon">
+      <form id="codizy-form" style="background:var(--bg);border:1px solid var(--bdr);border-top:none;border-radius:0 0 20px 20px;padding:32px 28px" onsubmit="return submitForm(event)" data-formspree="https://formspree.io/f/xqewzrdo">
         <!-- Honeypot anti-bot (caché aux humains) -->
         <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
           <label>Ne pas remplir ce champ : <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
@@ -1036,7 +1036,7 @@ function submitForm(e){
   }
   var data={company:f.company.value,email:f.email.value,phone:f.phone.value,needs:[],message:f.message.value};
   f.querySelectorAll('input[name="need"]:checked').forEach(function(c){data.needs.push(c.value)});
-  var FORMSPREE_ID='xpwdzdon';
+  var FORMSPREE_ID='https://formspree.io/f/xqewzrdo';
   fetch('https://formspree.io/f/'+FORMSPREE_ID,{
     method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({entreprise:data.company,email:data.email,telephone:data.phone,besoins:data.needs.join(', '),message:data.message,source:'Landing Codizy'})
@@ -1048,9 +1048,7 @@ function submitForm(e){
 }
 
 function fallbackMailto(data){
-  var s='Nouveau diagnostic Codizy — '+data.company;
-  var b='Entreprise: '+data.company+'\nEmail: '+data.email+'\nTel: '+data.phone+'\nBesoins: '+data.needs.join(', ')+'\nMessage: '+data.message;
-  window.open('mailto:codizy&#64;outlook.fr?subject='+encodeURIComponent(s)+'&body='+encodeURIComponent(b));
+  console.log('Formspree fallback - lead:', JSON.stringify(data));
   document.getElementById('codizy-form').style.display='none';
   document.getElementById('form-success').style.display='block';
 }
@@ -1059,7 +1057,7 @@ function sendSynthesis(){
   var email=document.getElementById('sim-email').value;
   // Tracking : notif a Antoine quand quelqu'un envoie sa synthese
   try{
-    fetch('https://formspree.io/f/xpwdzdon',{
+    fetch('https://formspree.io/f/https://formspree.io/f/xqewzrdo',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
@@ -1078,7 +1076,7 @@ function sendSynthesis(){
   var sC=tC*(v.automationGain/100),pb=sC>0?(v.investissement/sC)*12:999;
   var pT=pb<1?'< 1 mois':pb>36?'> 36 mois':Math.round(pb)+' mois';
   var subject='Votre simulation ROI Codizy';
-  var body='Simulation ROI Codizy\n========================\n\nCollaborateurs: '+v.employees+'\nHeures manuelles/sem/pers: '+v.hoursPerWeek+'h\nCout horaire: '+v.hourlyCost+' EUR/h\nTaux erreurs: '+v.errorRate+'%\nGain automatisation: '+v.automationGain+'%\nInvestissement: '+fE(v.investissement)+'\n\nRESULTATS\n---------\nCout annuel process manuels: '+fE(tC)+'\nEconomies annuelles: '+fE(sC)+'\nROI a 1 an: '+Math.round(((sC-v.investissement)/v.investissement)*100)+'%\nPayback: '+pT+'\n\n---\nSimulation realisee sur codizy.fr\nContact: codizy&#64;outlook.fr | 06 85 17 48 89';
+  var body='Simulation ROI Codizy\n========================\n\nCollaborateurs: '+v.employees+'\nHeures manuelles/sem/pers: '+v.hoursPerWeek+'h\nCout horaire: '+v.hourlyCost+' EUR/h\nTaux erreurs: '+v.errorRate+'%\nGain automatisation: '+v.automationGain+'%\nInvestissement: '+fE(v.investissement)+'\n\nRESULTATS\n---------\nCout annuel process manuels: '+fE(tC)+'\nEconomies annuelles: '+fE(sC)+'\nROI a 1 an: '+Math.round(((sC-v.investissement)/v.investissement)*100)+'%\nPayback: '+pT+'\n\n---\nSimulation realisee sur codizy.fr\nContact: codizy@outlook.fr | 06 85 17 48 89';
   window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body));
   var el=document.getElementById('sim-capture');
   el.innerHTML='<div style="text-align:center;width:100%;padding:8px 0"><span style="color:var(--grn);font-weight:700">Synthese envoyee a '+email+'</span></div>';
@@ -1087,7 +1085,7 @@ function sendSynthesis(){
 function exportPDF(){
   // Tracking : envoie une notif a Antoine quand quelqu'un imprime le PDF
   try{
-    fetch('https://formspree.io/f/xpwdzdon',{
+    fetch('https://formspree.io/f/https://formspree.io/f/xqewzrdo',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
@@ -1159,7 +1157,7 @@ function exportPDF(){
   doc+='<h2>Synthèse</h2>';
   doc+='<p>Avec '+v.employees+' collaborateur'+(v.employees>1?'s':'')+' passant chacun '+v.hoursPerWeek+'h/semaine sur des tâches manuelles, le coût annuel estimé est de '+fE(tC)+'. En automatisant '+v.automationGain+'% de ces process, l\'économie atteint '+fE(sC)+'/an. Pour un investissement de '+fE(v.investissement)+', le projet est rentabilisé en '+pT+'.</p>';
   
-  doc+='<div class="ft"><strong>CODIZY</strong> — Du terrain au digital. Sans détour.<br>codizy&#64;outlook.fr — 06 85 17 48 89 — codizy.fr<br><br><em>Simulation réalisée le '+new Date().toLocaleDateString('fr-FR')+'</em></div>';
+  doc+='<div class="ft"><strong>CODIZY</strong> — Du terrain au digital. Sans détour.<br>codizy@outlook.fr — 06 85 17 48 89 — codizy.fr<br><br><em>Simulation réalisée le '+new Date().toLocaleDateString('fr-FR')+'</em></div>';
   doc+='<\/body><\/html>';
   var win=window.open('','_blank','width=800,height=900');
   if(!win){alert('Veuillez autoriser les pop-ups pour télécharger le PDF');return;}
