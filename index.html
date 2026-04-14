@@ -1207,8 +1207,9 @@ function exportPDF(){
   doc+='<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3972F0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #D9E1F2">Resultats</div>';
   doc+='<table style="width:100%;border-collapse:collapse">';
   var results=[
-    ["Cout annuel des process manuels",fE(tC),"#3972F0",true],
-    ["dont erreurs / reprises",fE(eC),"#F59E0B",false],
+    ["Cout des heures manuelles",fE(mC),"#3972F0",true],
+    ["Cout des erreurs / reprises",fE(eC),"#F59E0B",false],
+    ["Cout total annuel",fE(tC),"#3972F0",true],
     ["Economies annuelles generees",fE(sC),"#10B981",true],
     ["Gain net annee 1",(nY>=0?"+":"")+fE(nY),nY>=0?"#10B981":"#EF4444",false],
     ["Gain net sur 3 ans",(s3-v.investissement>=0?"+":"")+fE(s3-v.investissement),s3-v.investissement>=0?"#10B981":"#EF4444",false],
