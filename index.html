@@ -897,7 +897,7 @@ input[type="checkbox"]:checked+.chip{background:var(--blue);color:#fff;border-co
       </div>
 
       <!-- FORM -->
-      <form id="codizy-form" style="background:var(--bg);border:1px solid var(--bdr);border-top:none;border-radius:0 0 20px 20px;padding:32px 28px" onsubmit="return submitForm(event)" data-formspree="xqpwzrdo">
+      <form id="codizy-form" style="background:var(--bg);border:1px solid var(--bdr);border-top:none;border-radius:0 0 20px 20px;padding:32px 28px" onsubmit="return submitForm(event)" data-formspree="xqewzrdo">
         <!-- Honeypot anti-bot (caché aux humains) -->
         <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
           <label>Ne pas remplir ce champ : <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
@@ -1096,7 +1096,7 @@ function submitForm(e){
   }
   var data={company:f.company.value,email:f.email.value,phone:f.phone.value,needs:[],message:f.message.value};
   f.querySelectorAll('input[name="need"]:checked').forEach(function(c){data.needs.push(c.value)});
-  var FORMSPREE_ID='xqpwzrdo';
+  var FORMSPREE_ID='xqewzrdo';
   fetch('https://formspree.io/f/'+FORMSPREE_ID,{
     method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({entreprise:data.company,email:data.email,telephone:data.phone,besoins:data.needs.join(', '),message:data.message,source:'Landing Codizy'})
@@ -1120,7 +1120,7 @@ function sendSynthesis(){
   var sC=tC*(v.automationGain/100),pb=sC>0?(v.investissement/sC)*12:999;
   var pT=pb<1?'< 1 mois':pb>36?'> 36 mois':Math.round(pb)+' mois';
   var r1=Math.round(((sC-v.investissement)/v.investissement)*100);
-  fetch('https://formspree.io/f/xqpwzrdo',{
+  fetch('https://formspree.io/f/xqewzrdo',{
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({
@@ -1154,7 +1154,7 @@ function sendSynthesis(){
 function exportPDF(){
   // Tracking : envoie une notif a Antoine quand quelqu'un imprime le PDF
   try{
-    fetch('https://formspree.io/f/xqpwzrdo',{
+    fetch('https://formspree.io/f/xqewzrdo',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
