@@ -1052,13 +1052,10 @@ function render(){
 
   h+='<div class="synthesis"><div class="synthesis-label">Synthèse décideur</div><p>Avec <strong>'+v.employees+' collaborateur'+(v.employees>1?'s':'')+'</strong> passant chacun <strong>'+v.hoursPerWeek+'h/sem</strong> sur des tâches manuelles, le coût annuel est de <strong>'+fE(tC)+'</strong>. En automatisant <strong>'+v.automationGain+' %</strong>, l\'économie atteint <strong>'+fE(sC)+'/an</strong>. Investissement : '+fE(v.investissement)+' — rentabilisé en <strong>'+pT+'</strong>.</p></div>';
 
-  h+='<div style="background:var(--w);border-radius:18px;border:1px solid var(--bdr);padding:20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;overflow:hidden" id="sim-capture">';
-  h+='<div style="flex:1;min-width:0;width:100%"><div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">Recevez vos résultats personnalisés</div><div style="font-size:13px;color:var(--mt)">On vous recontacte sous 24h avec une analyse sur mesure</div></div>';
-  h+='<div style="display:flex;gap:8px;flex:1;min-width:0;width:100%;flex-wrap:wrap"><input type="email" id="sim-email" placeholder="votre@email.fr" style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--bdr);border-radius:10px;font-family:inherit;font-size:14px"><button onclick="sendSynthesis()" class="btn btn-primary btn-sm" style="white-space:nowrap;flex-shrink:0">Recevoir mes résultats</button></div>';
-  h+='</div>';
-  h+='<div style="display:flex;gap:12px;justify-content:center;padding:10px 0 0;flex-wrap:wrap">';
-  h+='<a href="https://cal.com/antoine-guerin-fsxkbx" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none">Discuter de mon projet avec Antoine →</a>';
-  h+='<button onclick="exportPDF()" class="btn btn-outline btn-sm" style="gap:6px">Telecharger PDF</button>';
+  h+='<div style="background:var(--w);border-radius:18px;border:1px solid var(--bdr);padding:20px;margin-bottom:20px;margin-top:20px" id="sim-capture">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px">Exportez votre simulation</div>';
+  h+='<div style="font-size:12px;color:var(--mt);margin-bottom:12px">Entrez votre email pour recevoir le document</div>';
+  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="email" id="sim-email" placeholder="votre@email.fr" style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--bdr);border-radius:10px;font-family:inherit;font-size:14px"><button onclick="gatedPDF()" class="btn btn-primary btn-sm" style="white-space:nowrap">Telecharger PDF</button><a href="https://cal.com/antoine-guerin-fsxkbx" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="white-space:nowrap;text-decoration:none">Prendre RDV</a></div>';
   h+='</div>';
 
   document.getElementById('results').innerHTML=h;
@@ -1113,63 +1110,41 @@ function fallbackMailto(data){
   document.getElementById('form-success').style.display='block';
 }
 
-function sendSynthesis(){
+function gatedPDF(){
   var email=document.getElementById('sim-email').value;
-  if(!email||email.indexOf('@')<0){alert('Merci de renseigner un email valide');return}
+  if(!email||email.indexOf('@')<0){alert('Merci de renseigner votre email pour recevoir le PDF');return}
   var v=vals,w=47,mH=v.employees*v.hoursPerWeek*w,mC=mH*v.hourlyCost,eC=mC*(v.errorRate/100),tC=mC+eC;
   var sC=tC*(v.automationGain/100),pb=sC>0?(v.investissement/sC)*12:999;
   var pT=pb<1?'< 1 mois':pb>36?'> 36 mois':Math.round(pb)+' mois';
   var r1=Math.round(((sC-v.investissement)/v.investissement)*100);
+  
+  var payload={
+    _subject:email?'[Codizy] Lead ROI — '+email:'[Codizy] Export PDF ROI (anonyme)',
+    type:'Export PDF Simulateur',
+    collaborateurs:v.employees,
+    heures_semaine:v.hoursPerWeek+'h',
+    cout_horaire:v.hourlyCost+' EUR/h',
+    taux_erreurs:v.errorRate+' %',
+    gain_automatisation:v.automationGain+' %',
+    investissement:Math.round(v.investissement)+' EUR',
+    cout_annuel:Math.round(tC)+' EUR',
+    economies:Math.round(sC)+' EUR',
+    roi_1an:(r1>=0?'+':'')+r1+' %',
+    payback:pT,
+    source:'Simulateur ROI'
+  };
+  if(email&&email.indexOf('@')>0){payload.email_prospect=email;}
+  
   fetch('https://formspree.io/f/xqewzrdo',{
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({
-      _subject:'[Codizy] Nouveau lead simulateur ROI',
-      type:'Simulation ROI',
-      email_prospect:email,
-      collaborateurs:v.employees,
-      heures_semaine:v.hoursPerWeek,
-      cout_horaire:v.hourlyCost+'EUR',
-      taux_erreurs:v.errorRate+' %',
-      gain_automatisation:v.automationGain+' %',
-      investissement:v.investissement+'EUR',
-      cout_annuel:Math.round(tC)+'EUR',
-      economies:Math.round(sC)+'EUR',
-      roi_1an:r1+' %',
-      payback:pT,
-      source:'Simulateur ROI - Envoi synthese'
-    })
-  }).then(function(r){
-    var el=document.getElementById('sim-capture');
-    if(r.ok){
-      el.innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700;font-size:15px">Synthese envoyee a '+email+'</span><div style="font-size:12px;color:var(--mt);margin-top:6px">Nous vous recontactons sous 24h avec une analyse personnalisee</div></div>';
-    }else{
-      el.innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700">Demande enregistree — nous revenons vers vous rapidement</span></div>';
-    }
-  }).catch(function(){
-    document.getElementById('sim-capture').innerHTML='<div style="text-align:center;width:100%;padding:12px 0"><span style="color:var(--grn);font-weight:700">Demande enregistree</span></div>';
-  });
+    body:JSON.stringify(payload)
+  }).catch(function(){});
+  
+  exportPDF();
 }
 
 function exportPDF(){
-  // Tracking : envoie une notif a Antoine quand quelqu'un imprime le PDF
-  try{
-    fetch('https://formspree.io/f/xqewzrdo',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({
-        _subject:'[Codizy] PDF ROI imprime',
-        type:'PDF Export',
-        employees:vals.employees,
-        hoursPerWeek:vals.hoursPerWeek,
-        hourlyCost:vals.hourlyCost,
-        investissement:vals.investissement,
-        timestamp:new Date().toLocaleString('fr-FR'),
-        source:'Simulateur ROI - Export PDF'
-      })
-    }).catch(function(){});
-  }catch(e){}
-  
   var v=vals,w=47;
   var mH=v.employees*v.hoursPerWeek*w;
   var mC=mH*v.hourlyCost;
@@ -1181,59 +1156,101 @@ function exportPDF(){
   var r1=Math.round(((sC-v.investissement)/v.investissement)*100);
   var pb=sC>0?(v.investissement/sC)*12:999;
   var pT=pb<1?'< 1 mois':pb>36?'> 36 mois':Math.round(pb)+' mois';
+  var dateStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var emailProspect=document.getElementById('sim-email')?document.getElementById('sim-email').value:'';
   
-  var css='body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;padding:20px;color:#111827}';
-  css+='h1{color:#111827;font-size:22px;margin:0 0 6px 0;font-weight:700}';
-  css+='h2{color:#3972F0;font-size:18px;margin-top:24px;border-bottom:2px solid #D9E1F2;padding-bottom:6px}';
-  css+='table{width:100%;border-collapse:collapse;margin:12px 0}';
-  css+='td{padding:8px 12px;border-bottom:1px solid #D9E1F2}';
-  css+='td:last-child{text-align:right;font-weight:bold}';
-  css+='.hl{background:#F5F7FB}';
-  css+='.ac{color:#3972F0;font-weight:bold;font-size:18px}';
-  css+='.gn{color:#10B981;font-weight:bold;font-size:18px}';
-  css+='.ft{margin-top:40px;padding-top:16px;border-top:2px solid #3972F0;font-size:12px;color:#9CA3AF}';
+  var css='*{margin:0;padding:0;box-sizing:border-box}';
+  css+='body{font-family:Helvetica,Arial,sans-serif;color:#111827;max-width:750px;margin:0 auto;padding:40px 36px}';
+  css+='@page{margin:30px 20px}';
+  css+='@media print{body{padding:20px}}';
   
-  var doc='';
-  doc+='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Simulation ROI Codizy</title>';
-  doc+='<sty'+'le>'+css+'<\/sty'+'le>';
-  doc+='</head><body>';
-  doc+='<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #3972F0;padding-bottom:16px;margin-bottom:24px">';
-  doc+='<img src="data:image/png;base64,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" alt="Codizy" style="height:42px;width:auto">';
-  doc+='<div style="text-align:right;font-size:11px;color:#6B7280;line-height:1.5"><strong style="color:#111827;font-size:13px">Simulation ROI</strong><br>'+new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+'<br>codizy.fr</div>';
+  var doc='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Simulation ROI — Codizy</title>';
+  doc+='<sty'+'le>'+css+'<\/sty'+'le></head><body>';
+  
+  // HEADER
+  doc+='<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:3px solid #3972F0;margin-bottom:28px">';
+  doc+='<img src="data:image/png;base64,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" style="height:40px">';
+  doc+='<div style="text-align:right;font-size:11px;color:#6B7280;line-height:1.6"><strong style="color:#111827;font-size:13px">Simulation ROI</strong><br>'+dateStr+'<br>codizy.fr</div>';
   doc+='</div>';
-  doc+='<h1 style="font-size:22px;margin:0 0 6px 0;color:#111827">Votre retour sur investissement</h1>';
-  doc+='<p style="color:#4B5563;margin:0 0 24px 0;font-size:13px">Estimation chiffrée pour un projet de digitalisation adapté à votre entreprise</p>';
   
-  doc+='<h2>Paramètres</h2><table>';
-  doc+='<tr><td>Collaborateurs concernés</td><td>'+v.employees+'</td></tr>';
-  doc+='<tr><td>Heures manuelles / sem / personne</td><td>'+v.hoursPerWeek+'h</td></tr>';
-  doc+='<tr><td>Coût horaire chargé</td><td>'+fE(v.hourlyCost)+'</td></tr>';
-  doc+='<tr><td>Taux erreurs / reprises</td><td>'+v.errorRate+' %</td></tr>';
-  doc+='<tr><td>Gain automatisation estimé</td><td>'+v.automationGain+' %</td></tr>';
-  doc+='<tr><td>Investissement projet</td><td>'+fE(v.investissement)+'</td></tr>';
-  doc+='</table>';
+  // TITLE
+  doc+='<h1 style="font-size:24px;font-weight:800;color:#111827;margin-bottom:6px;letter-spacing:-0.5px">Votre retour sur investissement</h1>';
+  doc+='<p style="font-size:14px;color:#6B7280;margin-bottom:32px">Estimation personnalisee pour votre projet de digitalisation</p>';
   
-  doc+='<h2>Résultats</h2><table>';
-  doc+='<tr class="hl"><td>Coût annuel des process manuels</td><td class="ac">'+fE(tC)+'</td></tr>';
-  doc+='<tr><td>dont erreurs / reprises</td><td>'+fE(eC)+'</td></tr>';
-  doc+='<tr class="hl"><td>Économies annuelles</td><td class="gn">'+fE(sC)+'</td></tr>';
-  doc+='<tr><td>Gain net année 1</td><td>'+(nY>=0?'+':'')+fE(nY)+'</td></tr>';
-  doc+='<tr><td>Gain net sur 3 ans</td><td>'+(s3-v.investissement>=0?'+':'')+fE(s3-v.investissement)+'</td></tr>';
-  doc+='<tr class="hl"><td>ROI à 1 an</td><td class="ac">'+(r1>=0?'+':'')+r1+' %</td></tr>';
-  doc+='<tr class="hl"><td>Délai de rentabilité</td><td class="ac">'+pT+'</td></tr>';
-  doc+='</table>';
+  // KPI BOXES
+  doc+='<div style="display:flex;gap:12px;margin-bottom:28px">';
+  doc+='<div style="flex:1;background:linear-gradient(135deg,#3972F0,#0041FF);border-radius:12px;padding:20px;color:#fff;text-align:center"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;margin-bottom:6px">ROI a 1 an</div><div style="font-size:32px;font-weight:800">'+(r1>=0?'+':'')+r1+' %</div><div style="font-size:11px;opacity:.6;margin-top:4px">'+(r1>=100?'Excellent':r1>=0?'Positif':'Non rentable')+'</div></div>';
+  doc+='<div style="flex:1;background:#F5F7FB;border-radius:12px;padding:20px;text-align:center;border:1px solid #D9E1F2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9CA3AF;margin-bottom:6px">Payback</div><div style="font-size:32px;font-weight:800;color:#111827">'+pT+'</div><div style="font-size:11px;color:#9CA3AF;margin-top:4px">Delai de rentabilite</div></div>';
+  doc+='<div style="flex:1;background:#F5F7FB;border-radius:12px;padding:20px;text-align:center;border:1px solid #D9E1F2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9CA3AF;margin-bottom:6px">Economies / an</div><div style="font-size:32px;font-weight:800;color:#10B981">'+fE(sC)+'</div><div style="font-size:11px;color:#9CA3AF;margin-top:4px">Gain annuel estime</div></div>';
+  doc+='</div>';
   
-  doc+='<h2>Synthèse</h2>';
-  doc+='<p>Avec '+v.employees+' collaborateur'+(v.employees>1?'s':'')+' passant chacun '+v.hoursPerWeek+'h/semaine sur des tâches manuelles, le coût annuel estimé est de '+fE(tC)+'. En automatisant '+v.automationGain+'% de ces process, l\'économie atteint '+fE(sC)+'/an. Pour un investissement de '+fE(v.investissement)+', le projet est rentabilisé en '+pT+'.</p>';
+  // PARAMETERS TABLE
+  doc+='<div style="margin-bottom:28px">';
+  doc+='<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3972F0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #D9E1F2">Parametres de simulation</div>';
+  doc+='<table style="width:100%;border-collapse:collapse">';
+  var params=[
+    ["Collaborateurs concernes",v.employees+" personnes"],
+    ["Heures manuelles / semaine / personne",v.hoursPerWeek+"h"],
+    ["Cout horaire charge moyen",fE(v.hourlyCost)+"/h"],
+    ["Taux d\'erreurs / reprises",v.errorRate+" %"],
+    ["Gain d\'automatisation estime",v.automationGain+" %"],
+    ["Investissement projet",fE(v.investissement)]
+  ];
+  for(var i=0;i<params.length;i++){
+    var bg=i%2===0?'#F5F7FB':'#FFFFFF';
+    doc+='<tr style="background:'+bg+'"><td style="padding:10px 14px;font-size:13px;color:#4B5563">'+params[i][0]+'</td><td style="padding:10px 14px;font-size:14px;font-weight:700;color:#111827;text-align:right">'+params[i][1]+'</td></tr>';
+  }
+  doc+='</table></div>';
   
-  doc+='<div class="ft"><strong>CODIZY</strong> — Du terrain au digital. Sans détour.<br>codizy@outlook.fr — 06 85 17 48 89 — codizy.fr<br><br><em>Simulation réalisée le '+new Date().toLocaleDateString('fr-FR')+'</em></div>';
-  doc+='<\/body><\/html>';
-  var win=window.open('','_blank','width=800,height=900');
-  if(!win){alert('Veuillez autoriser les pop-ups pour télécharger le PDF');return;}
+  // RESULTS TABLE
+  doc+='<div style="margin-bottom:28px">';
+  doc+='<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3972F0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #D9E1F2">Resultats</div>';
+  doc+='<table style="width:100%;border-collapse:collapse">';
+  var results=[
+    ["Cout annuel des process manuels",fE(tC),"#3972F0",true],
+    ["dont erreurs / reprises",fE(eC),"#F59E0B",false],
+    ["Economies annuelles generees",fE(sC),"#10B981",true],
+    ["Gain net annee 1",(nY>=0?"+":"")+fE(nY),nY>=0?"#10B981":"#EF4444",false],
+    ["Gain net sur 3 ans",(s3-v.investissement>=0?"+":"")+fE(s3-v.investissement),s3-v.investissement>=0?"#10B981":"#EF4444",false],
+    ["ROI a 1 an",(r1>=0?"+":"")+r1+" %","#3972F0",true],
+    ["Delai de rentabilite",pT,"#3972F0",true]
+  ];
+  for(var i=0;i<results.length;i++){
+    var r=results[i];
+    var bg=r[3]?'#F5F7FB':'#FFFFFF';
+    var fw=r[3]?'800':'600';
+    var fs=r[3]?'15px':'13px';
+    doc+='<tr style="background:'+bg+'"><td style="padding:10px 14px;font-size:13px;color:#4B5563">'+r[0]+'</td><td style="padding:10px 14px;font-size:'+fs+';font-weight:'+fw+';color:'+r[2]+';text-align:right">'+r[1]+'</td></tr>';
+  }
+  doc+='</table></div>';
+  
+  // SYNTHESIS
+  doc+='<div style="background:#111827;border-radius:14px;padding:24px;margin-bottom:28px;color:#fff">';
+  doc+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:10px">Synthese</div>';
+  doc+='<p style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.85)">Avec <strong style="color:#BDFF1C">'+v.employees+' collaborateur'+(v.employees>1?'s':'')+' </strong>passant chacun <strong style="color:#BDFF1C">'+v.hoursPerWeek+'h/semaine</strong> sur des taches manuelles, le cout annuel estime est de <strong style="color:#BDFF1C">'+fE(tC)+'</strong>. En automatisant <strong style="color:#BDFF1C">'+v.automationGain+' %</strong> de ces process, l\'economie atteint <strong style="color:#BDFF1C">'+fE(sC)+'/an</strong>. Pour un investissement de '+fE(v.investissement)+', le projet est rentabilise en <strong style="color:#BDFF1C">'+pT+'</strong>.</p>';
+  doc+='</div>';
+  
+  // CTA
+  doc+='<div style="background:#F5F7FB;border-radius:14px;padding:24px;text-align:center;margin-bottom:28px;border:2px solid #D9E1F2">';
+  doc+='<div style="font-size:16px;font-weight:800;color:#111827;margin-bottom:6px">Pret a passer a l\'action ?</div>';
+  doc+='<p style="font-size:13px;color:#6B7280;margin-bottom:14px">Reservez un diagnostic gratuit de 30 minutes avec Antoine Guerin</p>';
+  doc+='<div style="display:inline-block;background:#3972F0;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700">codizy.fr — codizy@outlook.fr — 06 85 17 48 89</div>';
+  doc+='</div>';
+  
+  // FOOTER
+  doc+='<div style="border-top:2px solid #D9E1F2;padding-top:16px;display:flex;justify-content:space-between;align-items:center">';
+  doc+='<div style="font-size:11px;color:#9CA3AF;line-height:1.5"><strong style="color:#111827">CODIZY</strong> — Du terrain au digital. Sans detour.<br>codizy.fr</div>';
+  doc+='<div style="font-size:10px;color:#9CA3AF;text-align:right">Simulation realisee le '+dateStr+'<br>Document genere automatiquement</div>';
+  doc+='</div>';
+  
+  doc+='</body></html>';
+  
+  var win=window.open('','_blank','width=850,height=1000');
+  if(!win){alert('Veuillez autoriser les pop-ups pour telecharger le PDF');return;}
   win.document.open();
   win.document.write(doc);
   win.document.close();
-  setTimeout(function(){win.print();},600);
+  setTimeout(function(){win.print();},700);
 }
 
 </script>
